@@ -17,7 +17,13 @@ const DURATION: Record<GameNotification["kind"], number> = {
   quest: 3500,
   xp: 1500,
   fail: 600,
+  world: 2600,
+  relation: 3000,
+  condition: 3400,
+  codex: 3400,
 };
+
+const SIDE_KINDS: GameNotification["kind"][] = ["item", "xp", "relation", "condition", "codex"];
 
 export default function NotificationCenter() {
   const notifications = useGame((s) => s.notifications);
@@ -25,10 +31,19 @@ export default function NotificationCenter() {
 
   return (
     <>
-      {/* File haut-droite : objets + XP */}
+      {/* File haut-droite : objets, XP, relations, conditions, découvertes */}
       <div className="pointer-events-none absolute right-6 top-6 z-50 flex flex-col items-end gap-2">
         {notifications
-          .filter((n) => n.kind === "item" || n.kind === "xp")
+          .filter((n) => SIDE_KINDS.includes(n.kind))
+          .map((n) => (
+            <Toast key={n.id} n={n} onDone={() => dismiss(n.id)} />
+          ))}
+      </div>
+
+      {/* Centre-haut : passage du temps */}
+      <div className="pointer-events-none absolute left-1/2 top-16 z-50 flex -translate-x-1/2 flex-col items-center gap-2">
+        {notifications
+          .filter((n) => n.kind === "world")
           .map((n) => (
             <Toast key={n.id} n={n} onDone={() => dismiss(n.id)} />
           ))}
@@ -155,7 +170,69 @@ function Toast({ n, onDone }: { n: GameNotification; onDone: () => void }) {
         />
       );
 
+    case "world":
+      return (
+        <div
+          className={`pointer-events-auto px-6 py-2 ${reduced ? "" : "animate-slide-up"}`}
+          style={{ background: "var(--bg-panel)", border: "1px solid var(--border-glow)", boxShadow: "0 0 24px color-mix(in srgb, var(--accent) 28%, transparent)", backdropFilter: "blur(10px)" }}
+        >
+          <span className="font-display-title text-[12px]" style={{ color: "var(--text-accent)", letterSpacing: "0.25em" }}>
+            ☾ {n.label.toUpperCase()}
+          </span>
+        </div>
+      );
+
+    case "relation":
+      return (
+        <SideCard icon="✺" title="Nouvelle rencontre" label={n.label} accent="var(--text-accent)" reduced={reduced} />
+      );
+
+    case "condition": {
+      const color = n.debuff ? "var(--danger)" : "var(--success)";
+      return (
+        <SideCard icon={n.debuff ? "⚠" : "✦"} title={n.debuff ? "Affliction" : "État favorable"} label={n.label} accent={color} reduced={reduced} />
+      );
+    }
+
+    case "codex":
+      return (
+        <SideCard icon="◇" title={`Atlas · ${n.category}`} label={n.label} accent="var(--text-accent)" reduced={reduced} />
+      );
+
     default:
       return null;
   }
+}
+
+function SideCard({
+  icon,
+  title,
+  label,
+  accent,
+  reduced,
+}: {
+  icon: string;
+  title: string;
+  label: string;
+  accent: string;
+  reduced: boolean;
+}) {
+  return (
+    <div
+      className={`pointer-events-auto ${reduced ? "" : "animate-[slide-in-right_0.4s_ease-out]"}`}
+      style={{ background: "var(--bg-panel)", border: `1px solid ${accent}`, boxShadow: `0 0 22px color-mix(in srgb, ${accent} 28%, transparent)`, backdropFilter: "blur(10px)", maxWidth: 280 }}
+    >
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <span className="text-[16px]" style={{ color: accent }}>{icon}</span>
+        <div>
+          <div className="font-display-title text-[9px]" style={{ color: "var(--text-secondary)", letterSpacing: "0.22em" }}>
+            {title.toUpperCase()}
+          </div>
+          <div className="font-display-title text-[13px]" style={{ color: "var(--text-primary)" }}>
+            {label}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

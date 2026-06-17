@@ -16,12 +16,22 @@ import {
   readSave,
   AUTOSAVE_NAME,
 } from "@/lib/persistence";
+import { normalizeState } from "@/lib/migrate";
 import { audio } from "@/lib/audio";
 import { SFX_KEYS } from "@/data/sounds";
 import { getTheme } from "@/data/themes";
+import { worldLabel } from "@/lib/world";
 
 export type Screen = "home" | "settings" | "creation" | "game";
-export type Panel = "none" | "status" | "inventory" | "quests" | "chronicle" | "phone";
+export type Panel =
+  | "none"
+  | "status"
+  | "inventory"
+  | "quests"
+  | "chronicle"
+  | "phone"
+  | "relations"
+  | "atlas";
 
 interface SceneFlash {
   /** Incrémenté pour déclencher un flash de transition de scène. */
@@ -35,7 +45,11 @@ export type GameNotification =
   | { id: number; kind: "item"; label: string }
   | { id: number; kind: "quest"; label: string; done: boolean }
   | { id: number; kind: "xp"; amount: number }
-  | { id: number; kind: "fail" };
+  | { id: number; kind: "fail" }
+  | { id: number; kind: "world"; label: string }
+  | { id: number; kind: "relation"; label: string }
+  | { id: number; kind: "condition"; label: string; debuff: boolean }
+  | { id: number; kind: "codex"; label: string; category: string };
 
 interface GameStore {
   // --- Config ---
@@ -138,7 +152,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   setGame(state) {
-    set({ game: state });
+    set({ game: normalizeState(state) });
   },
 
   async startNewGame(state) {
@@ -158,7 +172,7 @@ export const useGame = create<GameStore>((set, get) => ({
   async resumeGame() {
     const st = await readSave(AUTOSAVE_NAME);
     if (!st) return false;
-    set({ game: st, screen: "game", panel: "none", error: null });
+    set({ game: normalizeState(st), screen: "game", panel: "none", error: null });
     void audio.playAmbient(getTheme(st.theme).id);
     return true;
   },
@@ -353,6 +367,21 @@ async function runTurn(
     if (typeof delta?.hp_delta === "number" && delta.hp_delta < 0) {
       void audio.playSfx(SFX_KEYS.fail);
       notifs.push({ id: nextNotifId(), kind: "fail" });
+    }
+    if (effects.dayAdvanced) {
+      void audio.playSfx(SFX_KEYS.scene);
+      notifs.push({ id: nextNotifId(), kind: "world", label: worldLabel(next.world) });
+    }
+    for (const name of effects.newNpcs) {
+      notifs.push({ id: nextNotifId(), kind: "relation", label: name });
+    }
+    for (const cond of effects.newConditions) {
+      void audio.playSfx(cond.debuff ? SFX_KEYS.fail : SFX_KEYS.item);
+      notifs.push({ id: nextNotifId(), kind: "condition", label: cond.label, debuff: cond.debuff });
+    }
+    for (const entry of effects.newCodex) {
+      void audio.playSfx(SFX_KEYS.select);
+      notifs.push({ id: nextNotifId(), kind: "codex", label: entry.title, category: entry.category });
     }
     if (effects.phoneMessage) void audio.playSfx(SFX_KEYS.phone);
 

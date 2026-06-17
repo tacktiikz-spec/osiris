@@ -4,7 +4,7 @@
 // =====================================================================
 
 /** Version du schéma de sauvegarde. À incrémenter en cas de migration. */
-export const GAME_STATE_VERSION = 1;
+export const GAME_STATE_VERSION = 2;
 
 /** Les cinq aptitudes du personnage (échelle 1..5). */
 export interface Stats {
@@ -72,6 +72,44 @@ export interface Phone {
   threads: Record<string, PhoneMessage[]>; // clé = id du contact
 }
 
+/** Moment de la journée (simulation du temps qui passe). */
+export type TimeOfDay = "aube" | "matin" | "midi" | "après-midi" | "crépuscule" | "nuit";
+
+export const TIME_ORDER: TimeOfDay[] = [
+  "aube",
+  "matin",
+  "midi",
+  "après-midi",
+  "crépuscule",
+  "nuit",
+];
+
+/** État du monde : horloge, calendrier, météo. */
+export interface WorldState {
+  day: number; // jour 1, 2, 3...
+  time: TimeOfDay;
+  weather: string; // libre : « ciel dégagé », « pluie battante »...
+}
+
+/** Effet d'état temporaire ou durable (blessure, bénédiction, fatigue...). */
+export interface Condition {
+  id: string;
+  label: string;
+  kind: "buff" | "debuff" | "neutral";
+  note?: string;
+}
+
+/** Entrée d'Atlas : savoir découvert au fil de l'aventure. */
+export type CodexCategory = "lieu" | "personne" | "faction" | "créature" | "savoir";
+
+export interface CodexEntry {
+  id: string;
+  category: CodexCategory;
+  title: string;
+  text: string;
+  discoveredAt: string; // ISO date
+}
+
 export type ChatRole = "user" | "assistant";
 
 export interface ChatMessage {
@@ -98,6 +136,10 @@ export interface GameState {
   location: string;
   flags: Record<string, string | number | boolean>;
 
+  world: WorldState; // horloge / calendrier / météo
+  conditions: Condition[]; // états temporaires actifs
+  codex: CodexEntry[]; // atlas des découvertes
+
   phone?: Phone; // activé seulement pour certains thèmes
 
   chronicle: string; // mémoire condensée
@@ -122,4 +164,16 @@ export interface StateDelta {
   location?: string | null;
   flags?: Record<string, string | number | boolean>;
   phone_messages?: { from: string; text: string }[];
+
+  // --- Simulation du monde ---
+  time_set?: TimeOfDay; // fixe le moment de la journée
+  day_delta?: number; // avance (ou recule) le compteur de jours
+  weather?: string; // change la météo
+
+  // --- Conditions (états) ---
+  conditions_add?: { label: string; kind?: "buff" | "debuff" | "neutral"; note?: string }[];
+  conditions_remove?: string[]; // par libellé
+
+  // --- Atlas / découvertes ---
+  codex_add?: { category?: CodexCategory; title: string; text?: string }[];
 }

@@ -6,8 +6,11 @@
 //  invalide, on n'altère pas l'état et on n'interrompt jamais le récit.
 // =====================================================================
 
-import type { GameState, Quest, StateDelta } from "@/types/game";
+import type { CodexCategory, Condition, GameState, Quest, StateDelta } from "@/types/game";
 import { applyXp } from "@/lib/progression";
+import { coerceTime } from "@/lib/world";
+
+const VALID_CATEGORIES: CodexCategory[] = ["lieu", "personne", "faction", "créature", "savoir"];
 
 export interface ParsedTurn {
   /** Récit nettoyé, prêt à afficher (sans actions ni bloc d'état). */
@@ -110,6 +113,11 @@ export interface ApplyResult {
     gotItem: boolean;
     questChanged: boolean;
     phoneMessage: boolean;
+    dayAdvanced: boolean;
+    timeChanged: boolean;
+    newNpcs: string[];
+    newConditions: { label: string; debuff: boolean }[];
+    newCodex: { title: string; category: CodexCategory }[];
   };
 }
 
@@ -118,12 +126,17 @@ export interface ApplyResult {
  * accompagné des effets notables.
  */
 export function applyDelta(state: GameState, delta: StateDelta | null): ApplyResult {
-  const effects = {
+  const effects: ApplyResult["effects"] = {
     leveledUp: false,
     levelsGained: 0,
     gotItem: false,
     questChanged: false,
     phoneMessage: false,
+    dayAdvanced: false,
+    timeChanged: false,
+    newNpcs: [],
+    newConditions: [],
+    newCodex: [],
   };
 
   if (!delta) {
@@ -137,6 +150,9 @@ export function applyDelta(state: GameState, delta: StateDelta | null): ApplyRes
   let npcs = [...state.npcs];
   let flags = { ...state.flags };
   let location = state.location;
+  let world = { ...state.world };
+  let conditions = [...state.conditions];
+  let codex = [...state.codex];
   let phone = state.phone ? { ...state.phone, threads: { ...state.phone.threads } } : undefined;
 
   // --- XP & niveau ---
@@ -241,7 +257,69 @@ export function applyDelta(state: GameState, delta: StateDelta | null): ApplyRes
           relationship: clamp(typeof n.relationship === "number" ? n.relationship : 0, -100, 100),
           note: n.note ?? "",
         });
+        effects.newNpcs.push(name);
       }
+    }
+  }
+
+  // --- Monde : heure / jour / météo ---
+  if (delta.time_set !== undefined) {
+    const t = coerceTime(delta.time_set);
+    if (t && t !== world.time) {
+      world.time = t;
+      effects.timeChanged = true;
+    }
+  }
+  if (typeof delta.day_delta === "number" && delta.day_delta !== 0) {
+    const nextDay = Math.max(1, world.day + Math.round(delta.day_delta));
+    if (nextDay !== world.day) {
+      world.day = nextDay;
+      if (delta.day_delta > 0) effects.dayAdvanced = true;
+      effects.timeChanged = true;
+    }
+  }
+  if (typeof delta.weather === "string" && delta.weather.trim()) {
+    world.weather = delta.weather.trim();
+    effects.timeChanged = true;
+  }
+
+  // --- Conditions (états) ---
+  if (Array.isArray(delta.conditions_add)) {
+    for (const cd of delta.conditions_add) {
+      const label = (cd?.label ?? "").trim();
+      if (!label) continue;
+      if (conditions.some((x) => x.label.toLowerCase() === label.toLowerCase())) continue;
+      const kind = cd.kind === "buff" || cd.kind === "debuff" || cd.kind === "neutral" ? cd.kind : "neutral";
+      const cond: Condition = { id: makeId("cnd"), label, kind, note: cd.note?.trim() || undefined };
+      conditions.push(cond);
+      effects.newConditions.push({ label, debuff: kind === "debuff" });
+    }
+  }
+  if (Array.isArray(delta.conditions_remove)) {
+    for (const raw of delta.conditions_remove) {
+      const label = String(raw ?? "").trim().toLowerCase();
+      if (!label) continue;
+      conditions = conditions.filter((x) => x.label.toLowerCase() !== label);
+    }
+  }
+
+  // --- Atlas / découvertes ---
+  if (Array.isArray(delta.codex_add)) {
+    for (const e of delta.codex_add) {
+      const title = (e?.title ?? "").trim();
+      if (!title) continue;
+      if (codex.some((x) => x.title.toLowerCase() === title.toLowerCase())) continue;
+      const category = VALID_CATEGORIES.includes(e.category as CodexCategory)
+        ? (e.category as CodexCategory)
+        : "savoir";
+      codex.push({
+        id: makeId("cdx"),
+        category,
+        title,
+        text: e.text?.trim() ?? "",
+        discoveredAt: new Date().toISOString(),
+      });
+      effects.newCodex.push({ title, category });
     }
   }
 
@@ -282,6 +360,9 @@ export function applyDelta(state: GameState, delta: StateDelta | null): ApplyRes
     npcs,
     flags,
     location,
+    world,
+    conditions,
+    codex,
     phone,
     updatedAt: new Date().toISOString(),
   };

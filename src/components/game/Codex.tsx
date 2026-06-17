@@ -129,6 +129,33 @@ export default function Codex() {
         ))}
       </div>
 
+      {/* Conditions actives */}
+      {game.conditions.length > 0 && (
+        <>
+          <Divider />
+          <div className="px-4 py-4">
+            <div className="font-display-title mb-2 text-[9px]" style={{ color: "var(--text-secondary)", letterSpacing: "0.25em" }}>
+              États
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {game.conditions.map((cd) => {
+                const color = cd.kind === "buff" ? "var(--success)" : cd.kind === "debuff" ? "var(--danger)" : "var(--text-accent)";
+                return (
+                  <span
+                    key={cd.id}
+                    title={cd.note}
+                    className="font-display px-2 py-0.5 text-[10px]"
+                    style={{ color, border: `1px solid ${color}`, background: `color-mix(in srgb, ${color} 10%, transparent)` }}
+                  >
+                    {cd.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
       <Divider />
 
       {/* Boutons panneaux */}
@@ -136,6 +163,8 @@ export default function Codex() {
         <PanelBtn icon="❖" label="Statut" onClick={() => openPanel("status")} badge={p.unspentPoints} />
         <PanelBtn icon="▦" label="Inventaire" onClick={() => openPanel("inventory")} />
         <PanelBtn icon="✦" label="Quêtes" onClick={() => openPanel("quests")} />
+        <PanelBtn icon="✺" label="Relations" onClick={() => openPanel("relations")} badge={game.npcs.length} />
+        <PanelBtn icon="◇" label="Atlas" onClick={() => openPanel("atlas")} badge={game.codex.length} />
         <PanelBtn icon="◈" label="Chronique" onClick={() => openPanel("chronicle")} />
         {hasPhone && <PanelBtn icon="✆" label="Téléphone" onClick={() => openPanel("phone")} badge={unread} />}
       </div>

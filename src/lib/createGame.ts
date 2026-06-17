@@ -6,6 +6,7 @@ import type { Character, GameState, Stats } from "@/types/game";
 import { GAME_STATE_VERSION } from "@/types/game";
 import { initialProgression, startingSkillFor } from "@/lib/progression";
 import { getTheme, themeHasSystem } from "@/data/themes";
+import { DEFAULT_WORLD } from "@/lib/world";
 
 export interface CreationDraft {
   theme: string;
@@ -50,6 +51,9 @@ export function createGameState(draft: CreationDraft): GameState {
     npcs: [],
     location: "",
     flags: {},
+    world: { ...DEFAULT_WORLD },
+    conditions: [],
+    codex: [],
     chronicle: "",
     foldedTo: 0,
     messages: [],
