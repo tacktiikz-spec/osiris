@@ -1,0 +1,25 @@
+# Dépendances
+node_modules/
+dist/
+dist-ssr/
+
+# Build Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Logs & divers
+*.log
+.DS_Store
+*.local
+.vite/
+
+# IMPORTANT : ne jamais committer la clé API ni les sauvegardes locales.
+# (Elles vivent dans le dossier de données de l'app, hors du repo, mais par sécurité :)
+**/oniria-config.json
+**/saves/
+**/*.apikey
+
+# Éditeurs
+.vscode/*
+!.vscode/extensions.json
+.idea/

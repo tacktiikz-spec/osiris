@@ -1,0 +1,93 @@
+/* Les polices sont chargées via <link> dans index.html (Rajdhani, Crimson Pro,
+   Share Tech Mono, JetBrains Mono) pour respecter la CSP. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Couleurs d'accent par défaut — surchargées dynamiquement par le thème. */
+  --accent: #a78bfa;
+  --accent2: #22d3ee;
+  --bg: #06060d;
+  --bg-soft: #0e0e1c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: #e7e9f0;
+  font-family: theme("fontFamily.sans");
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* Permet la sélection dans les zones de récit/saisie. */
+.selectable,
+input,
+textarea {
+  user-select: text;
+}
+
+/* Barre de défilement discrète. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+/* Lueur d'accent réutilisable. */
+.glow {
+  box-shadow: 0 0 24px -4px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.glow-text {
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.accent {
+  color: var(--accent);
+}
+.bg-accent {
+  background-color: var(--accent);
+}
+.border-accent {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Curseur clignotant de la machine à écrire. */
+.tw-caret::after {
+  content: "▌";
+  margin-left: 1px;
+  color: var(--accent);
+  animation: tw-blink 1s steps(1) infinite;
+}
+@keyframes tw-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Respect de prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

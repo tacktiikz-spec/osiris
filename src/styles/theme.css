@@ -1,0 +1,264 @@
+/* =====================================================================
+   ONIRIA — Système de design holographique (réf. Solo Leveling).
+   Tokens définis une seule fois, utilisés partout. Les tokens dérivés du
+   thème (border-glow/dim, text-accent) sont calculés via color-mix à partir
+   de --accent : quand themeVars.ts met à jour --accent, ils se recalculent.
+   ===================================================================== */
+
+:root {
+  /* --- Couleurs de base (fixes, indépendantes du thème) --- */
+  --bg-deep: #080a12; /* fond principal, quasi noir bleuté */
+  --bg-panel: #0d1020; /* fond des panneaux flottants */
+  --bg-panel-hover: #111628;
+  --text-primary: #e8eeff; /* blanc légèrement bleuté */
+  --text-secondary: #7a8baa; /* gris bleuté pour les labels */
+  --danger: #ff3b5c;
+  --success: #00e5a0;
+
+  /* --- Accent du thème (surchargé dynamiquement par themeVars.ts) --- */
+  --accent: #9a8cff;
+  --accent2: #5aa9ff;
+
+  /* --- Tokens dérivés de l'accent --- */
+  --border-glow: color-mix(in srgb, var(--accent) 60%, transparent);
+  --border-dim: color-mix(in srgb, var(--accent) 20%, transparent);
+  --text-accent: var(--accent);
+
+  /* --- Compat : on garde --bg / --bg-soft alignés sur le nouveau langage --- */
+  --bg: var(--bg-deep);
+  --bg-soft: var(--bg-panel);
+
+  /* --- Typographie --- */
+  --font-display: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Crimson Pro", Georgia, "Times New Roman", serif;
+  --font-data: "Share Tech Mono", "JetBrains Mono", monospace;
+}
+
+/* Fond global et police d'interface par défaut. */
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+/* ----------------------- Helpers typographiques ----------------------- */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
+.font-display-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.font-body {
+  font-family: var(--font-body);
+}
+.font-data {
+  font-family: var(--font-data);
+  color: var(--text-accent);
+}
+
+/* --------------------- Équerres lumineuses (coins) -------------------- */
+/* Brique réutilisée par HoloPanel et tous les cadres « coupés ». */
+.holo-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--border-glow);
+  pointer-events: none;
+  z-index: 2;
+}
+.holo-corner--tl {
+  top: -1px;
+  left: -1px;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+}
+.holo-corner--tr {
+  top: -1px;
+  right: -1px;
+  border-top: 1.5px solid;
+  border-right: 1.5px solid;
+}
+.holo-corner--bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 1.5px solid;
+  border-left: 1.5px solid;
+}
+.holo-corner--br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1.5px solid;
+  border-right: 1.5px solid;
+}
+
+/* ----------------------- Ligne de scan animée ------------------------- */
+.holo-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 45%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 7%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: holo-scan 8s linear infinite;
+}
+@keyframes holo-scan {
+  0% {
+    transform: translateY(-110%);
+  }
+  100% {
+    transform: translateY(320%);
+  }
+}
+
+/* Pulsation lumineuse douce (avatar du Codex). */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+.glow-pulse {
+  animation: glow-pulse 5s ease-in-out infinite;
+}
+
+/* Pulsation douce de coin (sélection active). */
+@keyframes corner-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.holo-corner--pulse {
+  animation: corner-pulse 2.2s ease-in-out infinite;
+}
+
+/* ----------------------- HoloPanel : états ---------------------------- */
+.holo-interactive {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease,
+    background-color 0.16s ease;
+  cursor: pointer;
+}
+.holo-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-glow);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 0 60px #00000033;
+  background-color: var(--bg-panel-hover);
+}
+.holo-active {
+  border-color: var(--border-glow) !important;
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 34%, transparent),
+    inset 0 0 50px color-mix(in srgb, var(--accent) 6%, transparent) !important;
+}
+
+/* Apparition décalée des lignes (panneaux). */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.row-in {
+  opacity: 0;
+  animation: row-in 0.35s ease-out forwards;
+}
+
+/* Clignotement doux (bouton [+] d'attribution). */
+@keyframes soft-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.soft-blink {
+  animation: soft-blink 1.4s ease-in-out infinite;
+}
+
+/* Vignette rouge d'échec (bords de l'écran). */
+@keyframes fail-vignette {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Notifications. */
+@keyframes xp-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes level-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Effet de décodage/glitch pour les titres (carte-titre, accueil). */
+@keyframes line-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.line-grow {
+  transform-origin: center;
+  animation: line-grow 0.8s ease-out forwards;
+}
